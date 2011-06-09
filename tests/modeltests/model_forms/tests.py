@@ -1,10 +1,216 @@
 import datetime
 from django.test import TestCase
 from django import forms
-from models import Category, Writer, Book, DerivedBook, Post, FlexibleDatePost
+from django.forms.models import ModelForm, model_to_dict
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django import forms
+from models import Category, Writer, Book, DerivedBook, Post, FlexibleDatePost, Article
 from mforms import (ProductForm, PriceForm, BookForm, DerivedBookForm,
                    ExplicitPKForm, PostForm, DerivedPostForm, CustomWriterForm,
                    FlexDatePostForm)
+
+
+class BaseCategoryForm(ModelForm):
+    class Meta:
+        model = Category
+
+
+class ExtraFields(BaseCategoryForm):
+    some_extra_field = forms.BooleanField()
+
+
+class ReplaceField(BaseCategoryForm):
+    url = forms.BooleanField()
+
+
+class LimitFields(ModelForm):
+    class Meta:
+        model = Category
+        fields = ['url']
+
+
+class ExcludeFields(ModelForm):
+    class Meta:
+        model = Category
+        exclude = ['url']
+
+
+class ConfusedForm(ModelForm):
+    """ Using 'fields' *and* 'exclude'. Not sure why you'd want to do
+    this, but uh, "be liberal in what you accept" and all.
+    """
+    class Meta:
+        model = Category
+        fields = ['name', 'url']
+        exclude = ['url']
+
+
+class MixModelForm(BaseCategoryForm):
+    """ Don't allow more than one 'model' definition in the
+    inheritance hierarchy.  Technically, it would generate a valid
+    form, but the fact that the resulting save method won't deal with
+    multiple objects is likely to trip up people not familiar with the
+    mechanics.
+    """
+    class Meta:
+        model = Article
+    # MixModelForm is now an Article-related thing, because MixModelForm.Meta
+    # overrides BaseCategoryForm.Meta.
+
+
+class ArticleForm(ModelForm):
+    class Meta:
+        model = Article
+
+#First class with a Meta class wins...
+class BadForm(ArticleForm, BaseCategoryForm):
+    pass
+
+
+class WriterForm(ModelForm):
+    book = forms.CharField(required=False)
+
+    class Meta:
+        model = Writer
+
+
+class SubCategoryForm(BaseCategoryForm):
+    """ Subclassing without specifying a Meta on the class will use
+    the parent's Meta (or the first parent in the MRO if there are
+    multiple parent classes).
+    """
+    pass
+
+class SomeCategoryForm(ModelForm):
+     checkbox = forms.BooleanField()
+
+     class Meta:
+         model = Category
+
+
+class SubclassMeta(SomeCategoryForm):
+    """ We can also subclass the Meta inner class to change the fields
+    list.
+    """
+    class Meta(SomeCategoryForm.Meta):
+        exclude = ['url']
+
+
+class OrderFields(ModelForm):
+    class Meta:
+        model = Category
+        fields = ['url', 'name']
+
+class OrderFields2(ModelForm):
+    class Meta:
+        model = Category
+        fields = ['slug', 'url', 'name']
+        exclude = ['url']
+
+
+
+class ModelFormBaseTest(TestCase):
+    def test_base_form(self):
+        self.assertEqual(BaseCategoryForm.base_fields.keys(),
+                         ['name', 'slug', 'url'])
+
+    def test_extra_fields(self):
+        self.assertEqual(ExtraFields.base_fields.keys(),
+                         ['name', 'slug', 'url', 'some_extra_field'])
+
+    def test_replace_field(self):
+        self.assertTrue(isinstance(ReplaceField.base_fields['url'],
+                                     forms.fields.BooleanField))
+
+    def test_override_field(self):
+        wf = WriterForm({'name': 'Richard Lockridge'})
+        self.assertTrue(wf.is_valid())
+
+    def test_limit_fields(self):
+        self.assertEqual(LimitFields.base_fields.keys(),
+                         ['url'])
+
+    def test_exclude_fields(self):
+        self.assertEqual(ExcludeFields.base_fields.keys(),
+                         ['name', 'slug'])
+
+    def test_confused_form(self):
+        self.assertEqual(ConfusedForm.base_fields.keys(),
+                         ['name'])
+
+    def test_mixmodel_form(self):
+        self.assertEqual(
+            MixModelForm.base_fields.keys(),
+            ['headline', 'slug', 'pub_date', 'writer', 'article', 'categories', 'status']
+            )
+
+    def test_article_form(self):
+        self.assertEqual(
+            ArticleForm.base_fields.keys(),
+            ['headline', 'slug', 'pub_date', 'writer', 'article', 'categories', 'status']
+            )
+
+    def test_bad_form(self):
+        self.assertEqual(
+            BadForm.base_fields.keys(),
+            ['headline', 'slug', 'pub_date', 'writer', 'article', 'categories', 'status']
+            )
+
+    def test_subcategory_form(self):
+        self.assertEqual(SubCategoryForm.base_fields.keys(),
+                         ['name', 'slug', 'url'])
+
+    def test_subclassmeta_form(self):
+        self.assertEqual(
+            str(SubclassMeta()),
+            """<tr><th><label for="id_name">Name:</label></th><td><input id="id_name" type="text" name="name" maxlength="20" /></td></tr>
+<tr><th><label for="id_slug">Slug:</label></th><td><input id="id_slug" type="text" name="slug" maxlength="20" /></td></tr>
+<tr><th><label for="id_checkbox">Checkbox:</label></th><td><input type="checkbox" name="checkbox" id="id_checkbox" /></td></tr>"""
+            )
+
+    def test_orderfields_form(self):
+        self.assertEqual(OrderFields.base_fields.keys(),
+                         ['url', 'name'])
+        self.assertEqual(
+            str(OrderFields()),
+            """<tr><th><label for="id_url">The URL:</label></th><td><input id="id_url" type="text" name="url" maxlength="40" /></td></tr>
+<tr><th><label for="id_name">Name:</label></th><td><input id="id_name" type="text" name="name" maxlength="20" /></td></tr>"""
+            )
+
+    def test_orderfields2_form(self):
+        self.assertEqual(OrderFields2.base_fields.keys(),
+                         ['slug', 'name'])
+
+
+class TestWidgetForm(ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'url', 'slug']
+        widgets = {
+            'name': forms.Textarea,
+            'url': forms.TextInput(attrs={'class': 'url'})
+            }
+
+
+
+class TestWidgets(TestCase):
+    def test_base_widgets(self):
+        frm = TestWidgetForm()
+        self.assertEqual(
+            str(frm['name']),
+            '<textarea id="id_name" rows="10" cols="40" name="name"></textarea>'
+            )
+        self.assertEqual(
+            str(frm['url']),
+            '<input id="id_url" type="text" class="url" name="url" maxlength="40" />'
+            )
+        self.assertEqual(
+            str(frm['slug']),
+            '<input id="id_slug" type="text" name="slug" maxlength="20" />'
+            )
+
+    def test_x(self):
+        pass
 
 
 class IncompleteCategoryFormWithFields(forms.ModelForm):
@@ -42,6 +248,9 @@ class ValidationTest(TestCase):
     def test_notrequired_overrides_notblank(self):
         form = CustomWriterForm({})
         assert form.is_valid()
+
+
+
 
 # unique/unique_together validation
 class UniqueTest(TestCase):
@@ -197,3 +406,63 @@ class UniqueTest(TestCase):
         form = FlexDatePostForm({'subtitle': "Finally", "title": "Django 1.0 is released",
             "slug": "Django 1.0"}, instance=p)
         self.assertTrue(form.is_valid())
+
+class OldFormForXTests(TestCase):
+    def test_base_form(self):
+        self.assertEqual(Category.objects.count(), 0)
+        f = BaseCategoryForm()
+        self.assertEqual(
+            str(f),
+            """<tr><th><label for="id_name">Name:</label></th><td><input id="id_name" type="text" name="name" maxlength="20" /></td></tr>
+<tr><th><label for="id_slug">Slug:</label></th><td><input id="id_slug" type="text" name="slug" maxlength="20" /></td></tr>
+<tr><th><label for="id_url">The URL:</label></th><td><input id="id_url" type="text" name="url" maxlength="40" /></td></tr>"""
+            )
+        self.assertEqual(
+            str(f.as_ul()),
+            """<li><label for="id_name">Name:</label> <input id="id_name" type="text" name="name" maxlength="20" /></li>
+<li><label for="id_slug">Slug:</label> <input id="id_slug" type="text" name="slug" maxlength="20" /></li>
+<li><label for="id_url">The URL:</label> <input id="id_url" type="text" name="url" maxlength="40" /></li>"""
+            )
+        self.assertEqual(
+            str(f["name"]),
+            """<input id="id_name" type="text" name="name" maxlength="20" />""")
+
+    def test_auto_id(self):
+        f = BaseCategoryForm(auto_id=False)
+        self.assertEqual(
+            str(f.as_ul()),
+            """<li>Name: <input type="text" name="name" maxlength="20" /></li>
+<li>Slug: <input type="text" name="slug" maxlength="20" /></li>
+<li>The URL: <input type="text" name="url" maxlength="40" /></li>"""
+            )
+
+    def test_with_data(self):
+        self.assertEqual(Category.objects.count(), 0)
+        f = BaseCategoryForm({'name': 'Entertainment',
+                              'slug': 'entertainment',
+                              'url': 'entertainment'})
+        self.assertTrue(f.is_valid())
+        self.assertEqual(f.cleaned_data['name'], 'Entertainment')
+        self.assertEqual(f.cleaned_data['slug'], 'entertainment')
+        self.assertEqual(f.cleaned_data['url'], 'entertainment')
+        c1 = f.save()
+        # Testing wether the same object is returned from the
+        # ORM... not the fastest way...
+
+        self.assertEqual(c1, Category.objects.all()[0])
+        self.assertEqual(c1.name, "Entertainment")
+        self.assertEqual(Category.objects.count(), 1)
+
+        f = BaseCategoryForm({'name': "It's a test",
+                              'slug': 'its-test',
+                              'url': 'test'})
+        self.assertTrue(f.is_valid())
+        self.assertEqual(f.cleaned_data['name'], "It's a test")
+        self.assertEqual(f.cleaned_data['slug'], 'its-test')
+        self.assertEqual(f.cleaned_data['url'], 'test')
+        c2 = f.save()
+        # Testing wether the same object is returned from the
+        # ORM... not the fastest way...
+        self.assertEqual(c2, Category.objects.get(pk=c2.pk))
+        self.assertEqual(c2.name, "It's a test")
+        self.assertEqual(Category.objects.count(), 2)
