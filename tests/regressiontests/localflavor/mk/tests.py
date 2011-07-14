@@ -172,5 +172,5 @@ class MKLocalflavorTests(TestCase):
 <option value="CS">\xc4\x8cu\xc4\x8der-Sandevo</option>
 <option value="ST">\xc5\xa0tip</option>
 <option value="SO">\xc5\xa0uto Orizari</option>
-</select>"""
+</select>\n"""
         self.assertEqual(str(self.form['municipality']), municipality_select_html)

@@ -215,7 +215,7 @@ class ModelAdminTests(TestCase):
             '<option value="" selected="selected">---------</option>\n'
             '<option value="%d">The Beatles</option>\n'
             '<option value="%d">The Doors</option>\n'
-            '</select>' % (band2.id, self.band.id))
+            '</select>\n\n' % (band2.id, self.band.id))
 
         class AdminConcertForm(forms.ModelForm):
             class Meta:
@@ -235,7 +235,7 @@ class ModelAdminTests(TestCase):
             '<select name="main_band" id="id_main_band">\n'
             '<option value="" selected="selected">---------</option>\n'
             '<option value="%d">The Doors</option>\n'
-            '</select>' % self.band.id)
+            '</select>\n\n' % self.band.id)
 
     def test_regression_for_ticket_15820(self):
         """

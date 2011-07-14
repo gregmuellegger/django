@@ -42,7 +42,7 @@ class ChangeListTests(TestCase):
         template = Template('{% load admin_list %}{% spaceless %}{% result_list cl %}{% endspaceless %}')
         context = Context({'cl': cl})
         table_output = template.render(context)
-        row_html = '<tbody><tr class="row1"><td class="action-checkbox"><input type="checkbox" class="action-select" value="%d" name="_selected_action" /></td><th><a href="%d/">name</a></th><td class="nowrap">(None)</td></tr></tbody>' % (new_child.id, new_child.id)
+        row_html = '<tbody><tr class="row1"><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="%d" class="action-select" /></td><th><a href="%d/">name</a></th><td class="nowrap">(None)</td></tr></tbody>' % (new_child.id, new_child.id)
         self.assertFalse(table_output.find(row_html) == -1,
             'Failed to find expected row element: %s' % table_output)
 
@@ -62,7 +62,7 @@ class ChangeListTests(TestCase):
         template = Template('{% load admin_list %}{% spaceless %}{% result_list cl %}{% endspaceless %}')
         context = Context({'cl': cl})
         table_output = template.render(context)
-        row_html = '<tbody><tr class="row1"><td class="action-checkbox"><input type="checkbox" class="action-select" value="%d" name="_selected_action" /></td><th><a href="%d/">name</a></th><td class="nowrap">Parent object</td></tr></tbody>' % (new_child.id, new_child.id)
+        row_html = '<tbody><tr class="row1"><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="%d" class="action-select" /></td><th><a href="%d/">name</a></th><td class="nowrap">Parent object</td></tr></tbody>' % (new_child.id, new_child.id)
         self.assertFalse(table_output.find(row_html) == -1,
             'Failed to find expected row element: %s' % table_output)
 
