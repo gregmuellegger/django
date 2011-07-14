@@ -114,6 +114,12 @@ Arguments sent with this signal:
 ``instance``
     The actual instance being saved.
 
+``raw``
+    A boolean; ``True`` if the model is saved exactly as presented
+    (i.e. when loading a fixture). One should not query/modify other
+    records in the database as the database might not be in a
+    consistent state yet.
+
 .. versionadded:: 1.3
 
 ``using``
@@ -138,6 +144,12 @@ Arguments sent with this signal:
 
 ``created``
     A boolean; ``True`` if a new record was created.
+
+``raw``
+    A boolean; ``True`` if the model is saved exactly as presented
+    (i.e. when loading a fixture). One should not query/modify other
+    records in the database as the database might not be in a
+    consistent state yet.
 
 .. versionadded:: 1.3
 
@@ -459,6 +471,29 @@ Test signals
    :synopsis: Signals sent during testing.
 
 Signals only sent when :doc:`running tests </topics/testing>`.
+
+setting_changed
+---------------
+
+.. versionadded:: 1.4
+
+.. data:: django.test.signals.setting_changed
+   :module:
+
+Sent when some :ref:`settings are overridden <overriding-setting>` with the
+:meth:`django.test.TestCase.setting` context manager or the
+:func:`django.test.utils.override_settings` decorator/context manager.
+
+Arguments sent with this signal:
+
+``sender``
+    The settings handler.
+
+``setting``
+    Same as sender
+
+``value``
+    The new setting value.
 
 template_rendered
 -----------------

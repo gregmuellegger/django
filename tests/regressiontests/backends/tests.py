@@ -196,12 +196,34 @@ class PostgresVersionTest(TestCase):
         self.assertEqual(pg_version._parse_version(version_string), version)
 
     def test_parsing(self):
-        self.assert_parses("PostgreSQL 8.3 beta4", (8, 3, None))
-        self.assert_parses("PostgreSQL 8.3", (8, 3, None))
-        self.assert_parses("EnterpriseDB 8.3", (8, 3, None))
-        self.assert_parses("PostgreSQL 8.3.6", (8, 3, 6))
-        self.assert_parses("PostgreSQL 8.4beta1", (8, 4, None))
-        self.assert_parses("PostgreSQL 8.3.1 on i386-apple-darwin9.2.2, compiled by GCC i686-apple-darwin9-gcc-4.0.1 (GCC) 4.0.1 (Apple Inc. build 5478)", (8, 3, 1))
+        """Test PostgreSQL version parsing from `SELECT version()` output"""
+        self.assert_parses("PostgreSQL 8.3 beta4", 80300)
+        self.assert_parses("PostgreSQL 8.3", 80300)
+        self.assert_parses("EnterpriseDB 8.3", 80300)
+        self.assert_parses("PostgreSQL 8.3.6", 80306)
+        self.assert_parses("PostgreSQL 8.4beta1", 80400)
+        self.assert_parses("PostgreSQL 8.3.1 on i386-apple-darwin9.2.2, compiled by GCC i686-apple-darwin9-gcc-4.0.1 (GCC) 4.0.1 (Apple Inc. build 5478)", 80301)
+
+    def test_version_detection(self):
+        """Test PostgreSQL version detection"""
+
+        # Helper mocks
+        class CursorMock(object):
+            "Very simple mock of DB-API cursor"
+            def execute(self, arg):
+                pass
+
+            def fetchone(self):
+                return ["PostgreSQL 8.3"]
+
+        class OlderConnectionMock(object):
+            "Mock of psycopg2 (< 2.0.12) connection"
+            def cursor(self):
+                return CursorMock()
+
+        # psycopg2 < 2.0.12 code path
+        conn = OlderConnectionMock()
+        self.assertEqual(pg_version.get_version(conn), 80300)
 
 # Unfortunately with sqlite3 the in-memory test database cannot be
 # closed, and so it cannot be re-opened during testing, and so we
@@ -222,6 +244,20 @@ class ConnectionCreatedSignalTest(TestCase):
         data.clear()
         cursor = connection.cursor()
         self.assertTrue(data == {})
+
+
+class EscapingChecks(TestCase):
+
+    @unittest.skipUnless(connection.vendor == 'sqlite',
+                         "This is a sqlite-specific issue")
+    def test_parameter_escaping(self):
+        #13648: '%s' escaping support for sqlite3
+        cursor = connection.cursor()
+        response = cursor.execute(
+            "select strftime('%%s', date('now'))").fetchall()[0][0]
+        self.assertNotEqual(response, None)
+        # response should be an non-zero integer
+        self.assertTrue(int(response))
 
 
 class BackendTestCase(TestCase):

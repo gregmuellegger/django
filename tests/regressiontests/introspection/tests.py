@@ -1,6 +1,5 @@
 from functools import update_wrapper
-from django.conf import settings
-from django.db import connection, DEFAULT_DB_ALIAS
+from django.db import connection
 from django.test import TestCase, skipUnlessDBFeature
 
 from models import Reporter, Article
@@ -45,7 +44,7 @@ class IntrospectionTests(TestCase):
 
     def test_django_table_names(self):
         cursor = connection.cursor()
-        cursor.execute('CREATE TABLE django_ixn_test_table (id INTEGER);');
+        cursor.execute('CREATE TABLE django_ixn_test_table (id INTEGER);')
         tl = connection.introspection.django_table_names()
         cursor.execute("DROP TABLE django_ixn_test_table;")
         self.assertTrue('django_ixn_testcase_table' not in tl,

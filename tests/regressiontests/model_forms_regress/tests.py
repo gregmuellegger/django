@@ -4,12 +4,12 @@ from django import forms
 from django.core.exceptions import FieldError, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms.models import (modelform_factory, ModelChoiceField,
-    fields_for_model, construct_instance)
+    fields_for_model, construct_instance, ModelFormMetaclass)
 from django.utils import unittest
 from django.test import TestCase
 
-from models import Person, RealPerson, Triple, FilePathModel, Article, \
-    Publication, CustomFF, Author, Author1, Homepage, Document, Edition
+from models import (Person, RealPerson, Triple, FilePathModel, Article,
+    Publication, CustomFF, Author, Author1, Homepage, Document, Edition)
 
 
 class ModelMultipleChoiceFieldTests(TestCase):
@@ -460,3 +460,19 @@ class EmptyFieldsTestCase(TestCase):
         self.assertTrue(form.is_valid())
         instance = construct_instance(form, Person(), fields=())
         self.assertEqual(instance.name, '')
+
+
+class CustomMetaclass(ModelFormMetaclass):
+    def __new__(cls, name, bases, attrs):
+        new = super(CustomMetaclass, cls).__new__(cls, name, bases, attrs)
+        new.base_fields = {}
+        return new
+
+class CustomMetaclassForm(forms.ModelForm):
+    __metaclass__ = CustomMetaclass
+
+
+class CustomMetaclassTestCase(TestCase):
+    def test_modelform_factory_metaclass(self):
+        new_cls = modelform_factory(Person, form=CustomMetaclassForm)
+        self.assertEqual(new_cls.base_fields, {})

@@ -5,9 +5,10 @@ Works with either the pysqlite2 module or the sqlite3 module in the
 standard library.
 """
 
+import datetime
+import decimal
 import re
 import sys
-import datetime
 
 from django.db import utils
 from django.db.backends import *
@@ -212,7 +213,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         if self.settings_dict['NAME'] != ":memory:":
             BaseDatabaseWrapper.close(self)
 
-FORMAT_QMARK_REGEX = re.compile(r'(?![^%])%s')
+FORMAT_QMARK_REGEX = re.compile(r'(?<!%)%s')
 
 class SQLiteCursorWrapper(Database.Cursor):
     """

@@ -1,28 +1,29 @@
 import copy
 import sys
-import types
 from functools import update_wrapper
 from itertools import izip
 
 import django.db.models.manager     # Imported to register signal handler.
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError, ValidationError, NON_FIELD_ERRORS
+from django.conf import settings
+from django.core.exceptions import (ObjectDoesNotExist,
+    MultipleObjectsReturned, FieldError, ValidationError, NON_FIELD_ERRORS)
 from django.core import validators
 from django.db.models.fields import AutoField, FieldDoesNotExist
-from django.db.models.fields.related import (OneToOneRel, ManyToOneRel,
+from django.db.models.fields.related import (ManyToOneRel,
     OneToOneField, add_lazy_relation)
+from django.db import (connections, router, transaction, DatabaseError,
+    DEFAULT_DB_ALIAS)
 from django.db.models.query import Q
 from django.db.models.query_utils import DeferredAttribute
 from django.db.models.deletion import Collector
 from django.db.models.options import Options
-from django.db import (connections, router, transaction, DatabaseError,
-    DEFAULT_DB_ALIAS)
 from django.db.models import signals
 from django.db.models.loading import register_models, get_model
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import curry
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.text import get_text_list, capfirst
-from django.conf import settings
+
 
 class ModelBase(type):
     """
@@ -782,9 +783,10 @@ class Model(object):
         # A unique field
         if len(unique_check) == 1:
             field_name = unique_check[0]
-            field_label = capfirst(opts.get_field(field_name).verbose_name)
+            field = opts.get_field(field_name)
+            field_label = capfirst(field.verbose_name)
             # Insert the error into the error dict, very sneaky
-            return _(u"%(model_name)s with this %(field_label)s already exists.") %  {
+            return field.error_messages['unique'] %  {
                 'model_name': unicode(model_name),
                 'field_label': unicode(field_label)
             }
@@ -914,10 +916,5 @@ def model_unpickle(model, attrs, factory):
     return cls.__new__(cls)
 model_unpickle.__safe_for_unpickle__ = True
 
-if sys.version_info < (2, 5):
-    # Prior to Python 2.5, Exception was an old-style class
-    def subclass_exception(name, parents, unused):
-        return types.ClassType(name, parents, {})
-else:
-    def subclass_exception(name, parents, module):
-        return type(name, parents, {'__module__': module})
+def subclass_exception(name, parents, module):
+    return type(name, parents, {'__module__': module})

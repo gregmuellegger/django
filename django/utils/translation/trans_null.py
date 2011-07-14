@@ -2,7 +2,6 @@
 # that don't actually do anything. This is purely for performance, so that
 # settings.USE_I18N = False can use this module rather than trans_real.py.
 
-import warnings
 from django.conf import settings
 from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe, SafeData
@@ -58,3 +57,7 @@ def to_locale(language):
 
 def get_language_from_request(request):
     return settings.LANGUAGE_CODE
+
+def get_language_from_path(request):
+    return None
+

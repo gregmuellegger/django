@@ -1,5 +1,4 @@
 import os
-from pprint import pformat
 import sys
 from warnings import warn
 
@@ -8,7 +7,7 @@ from django.core import signals
 from django.core.handlers.base import BaseHandler
 from django.core.urlresolvers import set_script_prefix
 from django.utils import datastructures
-from django.utils.encoding import force_unicode, smart_str, iri_to_uri
+from django.utils.encoding import force_unicode, iri_to_uri
 from django.utils.log import getLogger
 
 logger = getLogger('django.request')
@@ -44,32 +43,6 @@ class ModPythonRequest(http.HttpRequest):
         self._post_parse_error = False
         self._stream = self._req
         self._read_started = False
-
-    def __repr__(self):
-        # Since this is called as part of error handling, we need to be very
-        # robust against potentially malformed input.
-        try:
-            get = pformat(self.GET)
-        except:
-            get = '<could not parse>'
-        if self._post_parse_error:
-            post = '<could not parse>'
-        else:
-            try:
-                post = pformat(self.POST)
-            except:
-                post = '<could not parse>'
-        try:
-            cookies = pformat(self.COOKIES)
-        except:
-            cookies = '<could not parse>'
-        try:
-            meta = pformat(self.META)
-        except:
-            meta = '<could not parse>'
-        return smart_str(u'<ModPythonRequest\npath:%s,\nGET:%s,\nPOST:%s,\nCOOKIES:%s,\nMETA:%s>' %
-                         (self.path, unicode(get), unicode(post),
-                          unicode(cookies), unicode(meta)))
 
     def get_full_path(self):
         # RFC 3986 requires self._req.args to be in the ASCII range, but this

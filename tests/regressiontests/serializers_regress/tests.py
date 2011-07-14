@@ -15,10 +15,9 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from django.conf import settings
-from django.core import serializers, management
+from django.core import serializers
 from django.core.serializers import SerializerDoesNotExist
-from django.db import transaction, DEFAULT_DB_ALIAS, connection
+from django.db import connection
 from django.test import TestCase
 from django.utils.functional import curry
 
@@ -196,6 +195,8 @@ test_data = [
     #(XX, ImageData
     (data_obj, 90, IPAddressData, "127.0.0.1"),
     (data_obj, 91, IPAddressData, None),
+    (data_obj, 95, GenericIPAddressData, "fe80:1424:2223:6cff:fe8a:2e8a:2151:abcd"),
+    (data_obj, 96, GenericIPAddressData, None),
     (data_obj, 100, NullBooleanData, True),
     (data_obj, 101, NullBooleanData, False),
     (data_obj, 102, NullBooleanData, None),
@@ -298,6 +299,7 @@ The end."""),
     (pk_obj, 682, IntegerPKData, 0),
 #     (XX, ImagePKData
     (pk_obj, 690, IPAddressPKData, "127.0.0.1"),
+    (pk_obj, 695, GenericIPAddressPKData, "fe80:1424:2223:6cff:fe8a:2e8a:2151:abcd"),
     # (pk_obj, 700, NullBooleanPKData, True),
     # (pk_obj, 701, NullBooleanPKData, False),
     (pk_obj, 710, PhonePKData, "212-634-5789"),

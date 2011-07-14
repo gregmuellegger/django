@@ -206,6 +206,8 @@ class MultiValueDictTests(DatastructuresTestCase):
         self.assertEqual(d.get('lastname'), None)
         self.assertEqual(d.get('lastname', 'nonexistent'), 'nonexistent')
         self.assertEqual(d.getlist('lastname'), [])
+        self.assertEqual(d.getlist('doesnotexist', ['Adrian', 'Simon']),
+                         ['Adrian', 'Simon'])
 
         d.setlist('lastname', ['Holovaty', 'Willison'])
         self.assertEqual(d.getlist('lastname'), ['Holovaty', 'Willison'])
@@ -232,6 +234,18 @@ class MultiValueDictTests(DatastructuresTestCase):
             d2["key"].append("Penguin")
             self.assertEqual(d1["key"], ["Penguin"])
             self.assertEqual(d2["key"], ["Penguin"])
+
+    def test_dict_translation(self):
+        mvd = MultiValueDict({
+            'devs': ['Bob', 'Joe'],
+            'pm': ['Rory'],
+        })
+        d = mvd.dict()
+        self.assertEqual(d.keys(), mvd.keys())
+        for key in mvd.keys():
+            self.assertEqual(d[key], mvd[key])
+
+        self.assertEqual({}, MultiValueDict().dict())
 
 
 class DotExpandedDictTests(DatastructuresTestCase):

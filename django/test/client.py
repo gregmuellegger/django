@@ -5,7 +5,7 @@ import re
 import mimetypes
 import warnings
 from copy import copy
-from urlparse import urlparse, urlunparse, urlsplit
+from urlparse import urlparse, urlsplit
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -24,7 +24,7 @@ from django.utils.encoding import smart_str
 from django.utils.http import urlencode
 from django.utils.importlib import import_module
 from django.utils.itercompat import is_iterable
-from django.db import transaction, close_connection
+from django.db import close_connection
 from django.test.utils import ContextList
 
 __all__ = ('Client', 'RequestFactory', 'encode_file', 'encode_multipart')
@@ -356,7 +356,7 @@ class Client(RequestFactory):
         """
         Obtains the current session variables.
         """
-        if 'django.contrib.sessions' in settings.INSTALLED_APPS:
+        if 'django.contrib.sessions.middleware.SessionMiddleware' in settings.MIDDLEWARE_CLASSES:
             engine = import_module(settings.SESSION_ENGINE)
             cookie = self.cookies.get(settings.SESSION_COOKIE_NAME, None)
             if cookie:
@@ -504,7 +504,7 @@ class Client(RequestFactory):
         """
         user = authenticate(**credentials)
         if user and user.is_active \
-                and 'django.contrib.sessions' in settings.INSTALLED_APPS:
+                and 'django.contrib.sessions.middleware.SessionMiddleware' in settings.MIDDLEWARE_CLASSES:
             engine = import_module(settings.SESSION_ENGINE)
 
             # Create a fake request to store login details.

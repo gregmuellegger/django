@@ -4,15 +4,15 @@ Form Widget classes specific to the Django admin site.
 
 import copy
 from django import forms
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.forms.widgets import RadioFieldRenderer
 from django.forms.util import flatatt
+from django.templatetags.static import static
 from django.utils.html import escape
-from django.utils.text import truncate_words
+from django.utils.text import Truncator
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.utils.encoding import force_unicode
-from django.conf import settings
-from django.core.urlresolvers import reverse, NoReverseMatch
 
 
 class FilteredSelectMultiple(forms.SelectMultiple):
@@ -25,9 +25,8 @@ class FilteredSelectMultiple(forms.SelectMultiple):
     template_name = 'admin/forms/filtered_select_multiple.html'
 
     class Media:
-        js = (settings.ADMIN_MEDIA_PREFIX + "js/core.js",
-              settings.ADMIN_MEDIA_PREFIX + "js/SelectBox.js",
-              settings.ADMIN_MEDIA_PREFIX + "js/SelectFilter2.js")
+        js = ["admin/js/%s" % path
+              for path in ["core.js", "SelectBox.js", "SelectFilter2.js"]]
 
     def __init__(self, verbose_name, is_stacked, attrs=None, choices=()):
         self.verbose_name = verbose_name
@@ -51,19 +50,16 @@ class FilteredSelectMultiple(forms.SelectMultiple):
         })
         return context
 
-
 class AdminDateWidget(forms.DateInput):
     class Media:
-        js = (settings.ADMIN_MEDIA_PREFIX + "js/calendar.js",
-              settings.ADMIN_MEDIA_PREFIX + "js/admin/DateTimeShortcuts.js")
+        js = ["admin/js/calendar.js", "admin/js/admin/DateTimeShortcuts.js"]
 
     def __init__(self, attrs={}, format=None):
         super(AdminDateWidget, self).__init__(attrs={'class': 'vDateField', 'size': '10'}, format=format)
 
 class AdminTimeWidget(forms.TimeInput):
     class Media:
-        js = (settings.ADMIN_MEDIA_PREFIX + "js/calendar.js",
-              settings.ADMIN_MEDIA_PREFIX + "js/admin/DateTimeShortcuts.js")
+        js = ["admin/js/calendar.js", "admin/js/admin/DateTimeShortcuts.js"]
 
     def __init__(self, attrs={}, format=None):
         super(AdminTimeWidget, self).__init__(attrs={'class': 'vTimeField', 'size': '8'}, format=format)
@@ -161,7 +157,7 @@ class ForeignKeyRawIdWidget(forms.TextInput):
         key = self.rel.get_related_field().name
         try:
             obj = self.rel.to._default_manager.using(self.db).get(**{key: value})
-            return '&nbsp;<strong>%s</strong>' % escape(truncate_words(obj, 14))
+            return '&nbsp;<strong>%s</strong>' % escape(Truncator(obj).words(14, truncate='...'))
         except (ValueError, self.rel.to.DoesNotExist):
             return ''
 

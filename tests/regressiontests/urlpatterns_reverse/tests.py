@@ -2,10 +2,9 @@
 Unit tests for reverse URL lookups.
 """
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse, resolve, NoReverseMatch,\
-                                     Resolver404, ResolverMatch,\
-                                     RegexURLResolver, RegexURLPattern
+from django.core.exceptions import ImproperlyConfigured, ViewDoesNotExist
+from django.core.urlresolvers import (reverse, resolve, NoReverseMatch,
+    Resolver404, ResolverMatch, RegexURLResolver, RegexURLPattern)
 from django.http import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.shortcuts import redirect
 from django.test import TestCase
@@ -127,8 +126,13 @@ test_data = (
     ('kwargs_view', '/arg_view/10/', [], {'arg1':10}),
     ('regressiontests.urlpatterns_reverse.views.absolute_kwargs_view', '/absolute_arg_view/', [], {}),
     ('regressiontests.urlpatterns_reverse.views.absolute_kwargs_view', '/absolute_arg_view/10/', [], {'arg1':10}),
-    ('non_path_include', '/includes/non_path_include/', [], {})
+    ('non_path_include', '/includes/non_path_include/', [], {}),
 
+    # Tests for #13154
+    ('defaults', '/defaults_view1/3/', [], {'arg1': 3, 'arg2': 1}),
+    ('defaults', '/defaults_view2/3/', [], {'arg1': 3, 'arg2': 2}),
+    ('defaults', NoReverseMatch, [], {'arg1': 3, 'arg2': 3}),
+    ('defaults', NoReverseMatch, [], {'arg2': 1}),
 )
 
 class NoURLPatternsTests(TestCase):
@@ -465,3 +469,14 @@ class ResolverMatchTests(TestCase):
             self.assertEqual(match[0], func)
             self.assertEqual(match[1], args)
             self.assertEqual(match[2], kwargs)
+
+class ErroneousViewTests(TestCase):
+    urls = 'regressiontests.urlpatterns_reverse.erroneous_urls'
+
+    def test_erroneous_resolve(self):
+        self.assertRaises(ImportError, self.client.get, '/erroneous_inner/')
+        self.assertRaises(ImportError, self.client.get, '/erroneous_outer/')
+        self.assertRaises(ViewDoesNotExist, self.client.get, '/missing_inner/')
+        self.assertRaises(ViewDoesNotExist, self.client.get, '/missing_outer/')
+        self.assertRaises(ViewDoesNotExist, self.client.get, '/uncallable/')
+

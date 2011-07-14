@@ -19,14 +19,14 @@ class BaseHandler(object):
     ]
 
     def __init__(self):
-        self._request_middleware = self._view_middleware = self._response_middleware = self._exception_middleware = None
+        self._request_middleware = self._view_middleware = self._template_response_middleware = self._response_middleware = self._exception_middleware = None
 
 
     def load_middleware(self):
         """
         Populate middleware lists from settings.MIDDLEWARE_CLASSES.
 
-        Must be called after the environment is fixed (see __call__).
+        Must be called after the environment is fixed (see __call__ in subclasses).
         """
         from django.conf import settings
         from django.core import exceptions
@@ -133,7 +133,7 @@ class BaseHandler(object):
                 if hasattr(response, 'render') and callable(response.render):
                     for middleware_method in self._template_response_middleware:
                         response = middleware_method(request, response)
-                    response.render()
+                    response = response.render()
 
             except http.Http404, e:
                 logger.warning('Not Found: %s' % request.path,
@@ -198,17 +198,17 @@ class BaseHandler(object):
         if settings.DEBUG_PROPAGATE_EXCEPTIONS:
             raise
 
-        if settings.DEBUG:
-            from django.views import debug
-            return debug.technical_500_response(request, *exc_info)
-
         logger.error('Internal Server Error: %s' % request.path,
             exc_info=exc_info,
             extra={
                 'status_code': 500,
-                'request':request
+                'request': request
             }
         )
+
+        if settings.DEBUG:
+            from django.views import debug
+            return debug.technical_500_response(request, *exc_info)
 
         # If Http500 handler is not installed, re-raise last exception
         if resolver.urlconf_module is None:

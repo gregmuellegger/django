@@ -246,9 +246,17 @@ ALLOWED_INCLUDE_ROOTS = ()
 # is an admin.
 ADMIN_FOR = ()
 
-# 404s that may be ignored.
-IGNORABLE_404_STARTS = ('/cgi-bin/', '/_vti_bin', '/_vti_inf')
-IGNORABLE_404_ENDS = ('mail.pl', 'mailform.pl', 'mail.cgi', 'mailform.cgi', 'favicon.ico', '.php')
+# List of compiled regular expression objects representing URLs that need not
+# be reported when SEND_BROKEN_LINK_EMAILS is True. Here are a few examples:
+#    import re
+#    IGNORABLE_404_URLS = (
+#        re.compile(r'^/apple-touch-icon.*\.png$'),
+#        re.compile(r'^/favicon.ico$),
+#        re.compile(r'^/robots.txt$),
+#        re.compile(r'^/phpmyadmin/),
+#        re.compile(r'\.(cgi|php|pl)$'),
+#    )
+IGNORABLE_404_URLS = ()
 
 # A secret key for this particular Django installation. Used in secret-key
 # hashing algorithms. Set this in your settings, or Django will complain
@@ -358,12 +366,15 @@ TIME_INPUT_FORMATS = (
 # * Note that these format strings are different from the ones to display dates
 DATETIME_INPUT_FORMATS = (
     '%Y-%m-%d %H:%M:%S',     # '2006-10-25 14:30:59'
+    '%Y-%m-%d %H:%M:%S.%f',  # '2006-10-25 14:30:59.000200'
     '%Y-%m-%d %H:%M',        # '2006-10-25 14:30'
     '%Y-%m-%d',              # '2006-10-25'
     '%m/%d/%Y %H:%M:%S',     # '10/25/2006 14:30:59'
+    '%m/%d/%Y %H:%M:%S.%f',  # '10/25/2006 14:30:59.000200'
     '%m/%d/%Y %H:%M',        # '10/25/2006 14:30'
     '%m/%d/%Y',              # '10/25/2006'
     '%m/%d/%y %H:%M:%S',     # '10/25/06 14:30:59'
+    '%m/%d/%y %H:%M:%S.%f',  # '10/25/06 14:30:59.000200'
     '%m/%d/%y %H:%M',        # '10/25/06 14:30'
     '%m/%d/%y',              # '10/25/06'
 )
@@ -397,6 +408,9 @@ URL_VALIDATOR_USER_AGENT = "Django/%s (http://www.djangoproject.com)" % get_vers
 # The tablespaces to use for each model when not specified otherwise.
 DEFAULT_TABLESPACE = ''
 DEFAULT_INDEX_TABLESPACE = ''
+
+# Default X-Frame-Options header value
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ##############
 # MIDDLEWARE #
@@ -468,6 +482,12 @@ LOGIN_REDIRECT_URL = '/accounts/profile/'
 # The number of days a password reset link is valid for
 PASSWORD_RESET_TIMEOUT_DAYS = 3
 
+###########
+# SIGNING #
+###########
+
+SIGNING_BACKEND = 'django.core.signing.TimestampSigner'
+
 ########
 # CSRF #
 ########
@@ -476,9 +496,11 @@ PASSWORD_RESET_TIMEOUT_DAYS = 3
 # rejected by the CSRF middleware.
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 
-# Name and domain for CSRF cookie.
+# Settings for CSRF cookie.
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_DOMAIN = None
+CSRF_COOKIE_PATH = '/'
+CSRF_COOKIE_SECURE = False
 
 ############
 # MESSAGES #
@@ -503,9 +525,16 @@ LOGGING_CONFIG = 'django.utils.log.dictConfig'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda r: not DEBUG
+        }
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
+            'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         }
     },
@@ -517,6 +546,10 @@ LOGGING = {
         },
     }
 }
+
+# Default exception reporter filter class used in case none has been
+# specifically assigned to the HttpRequest instance.
+DEFAULT_EXCEPTION_REPORTER_FILTER = 'django.views.debug.SafeExceptionReporterFilter'
 
 ###########
 # TESTING #
@@ -560,8 +593,3 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
-
-# URL prefix for admin media -- CSS, JavaScript and images.
-# Make sure to use a trailing slash.
-# Examples: "http://foo.com/static/admin/", "/static/admin/".
-ADMIN_MEDIA_PREFIX = '/static/admin/'
