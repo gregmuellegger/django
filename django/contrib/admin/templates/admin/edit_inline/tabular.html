@@ -4,7 +4,7 @@
 {{ inline_admin_formset.formset.management_form }}
 <fieldset class="module">
    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
-   {{ inline_admin_formset.formset.non_form_errors }}
+   {% include "forms/errors.html" with errors=inline_admin_formset.formset.non_form_errors %}
    <table>
      <thead><tr>
      {% for field in inline_admin_formset.fields %}
@@ -18,7 +18,7 @@
      <tbody>
      {% for inline_admin_form in inline_admin_formset %}
         {% if inline_admin_form.form.non_field_errors %}
-        <tr><td colspan="{{ inline_admin_form|cell_count }}">{{ inline_admin_form.form.non_field_errors }}</td></tr>
+        <tr><td colspan="{{ inline_admin_form|cell_count }}">{% include "forms/errors.html" with errors=inline_admin_form.form.non_field_errors %}</td></tr>
         {% endif %}
         <tr class="{% cycle "row1" "row2" %} {% if inline_admin_form.original or inline_admin_form.show_url %}has_original{% endif %}{% if forloop.last %} empty-form{% endif %}"
              id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
@@ -43,10 +43,10 @@
           {% for line in fieldset %}
             {% for field in line %}
               <td class="{{ field.field.name }}">
-              {% if field.is_readonly %}
+              {% if field.field.is_readonly %}
                   <p>{{ field.contents }}</p>
               {% else %}
-                  {{ field.field.errors.as_ul }}
+                  {% include "forms/errors.html" with errors=field.field.errors %}
                   {{ field.field }}
               {% endif %}
               </td>

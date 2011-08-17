@@ -42,20 +42,22 @@
     <p class="errornote">
     {% blocktrans count errors|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktrans %}
     </p>
-    {{ adminform.form.non_field_errors }}
+    {% include "forms/errors.html" with errors=adminform.form.non_field_errors %}
 {% endif %}
 
 {% block field_sets %}
-{% for fieldset in adminform %}
-  {% include "admin/includes/fieldset.html" %}
-{% endfor %}
+{% form adminform using %}
+  {% for fieldset in adminform %}
+    {% formrow fieldset using "admin/forms/layouts/fieldset.html" %}
+  {% endfor %}
+{% endform %}
 {% endblock %}
 
 {% block after_field_sets %}{% endblock %}
 
 {% block inline_field_sets %}
 {% for inline_admin_formset in inline_admin_formsets %}
-    {% include inline_admin_formset.opts.template %}
+    {% form inline_admin_formset using inline_admin_formset.opts.template %}
 {% endfor %}
 {% endblock %}
 

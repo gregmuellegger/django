@@ -5,10 +5,8 @@ from django.contrib.admin.templatetags.admin_static import static
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields.related import ManyToManyRel
-from django.forms.util import flatatt
-from django.template.defaultfilters import capfirst
-from django.utils.encoding import force_unicode, smart_unicode
-from django.utils.html import escape, conditional_escape
+from django.utils.encoding import smart_unicode
+from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
@@ -99,39 +97,24 @@ class Fieldline(object):
     def __iter__(self):
         for i, field in enumerate(self.fields):
             if field in self.readonly_fields:
-                yield AdminReadonlyField(self.form, field, is_first=(i == 0),
+                yield AdminReadonlyField(self.form, field,
                     model_admin=self.model_admin)
             else:
-                yield AdminField(self.form, field, is_first=(i == 0))
+                yield AdminField(self.form, field)
 
     def errors(self):
-        return mark_safe(u'\n'.join([self.form[f].errors.as_ul() for f in self.fields if f not in self.readonly_fields]).strip('\n'))
+        errors = []
+        for f in self.fields:
+            if f not in self.readonly_fields:
+                errors.extend(self.form[f].errors)
+        return errors
 
 class AdminField(object):
-    def __init__(self, form, field, is_first):
+    def __init__(self, form, field):
         self.field = form[field] # A django.forms.BoundField instance
-        self.is_first = is_first # Whether this field is first on the line
-        self.is_checkbox = isinstance(self.field.field.widget, forms.CheckboxInput)
-
-    def label_tag(self):
-        classes = []
-        if self.is_checkbox:
-            classes.append(u'vCheckboxLabel')
-            contents = force_unicode(escape(self.field.label))
-        else:
-            contents = force_unicode(escape(self.field.label)) + u':'
-        if self.field.field.required:
-            classes.append(u'required')
-        if not self.is_first:
-            classes.append(u'inline')
-        attrs = classes and {'class': u' '.join(classes)} or {}
-        return self.field.label_tag(contents=contents, attrs=attrs)
-
-    def errors(self):
-        return mark_safe(self.field.errors.as_ul())
 
 class AdminReadonlyField(object):
-    def __init__(self, form, field, is_first, model_admin=None):
+    def __init__(self, form, field, model_admin=None):
         label = label_for_field(field, form._meta.model, model_admin)
         # Make self.field look a little bit like a field. This means that
         # {{ field.name }} must be a useful class name to identify the field.
@@ -140,35 +123,20 @@ class AdminReadonlyField(object):
             class_name = field.__name__ != '<lambda>' and field.__name__ or ''
         else:
             class_name = field
-        self.field = {
-            'name': class_name,
-            'label': label,
-            'field': field,
-            'help_text': help_text_for_field(class_name, form._meta.model)
-        }
+        from django.forms.forms import BoundField
+        help_text = help_text_for_field(class_name, form._meta.model)
+        form_field = forms.CharField(label=label, help_text=help_text)
+        self.field = BoundField(form, form_field, field)
+        self.field.is_readonly = True
         self.form = form
         self.model_admin = model_admin
-        self.is_first = is_first
-        self.is_checkbox = False
-        self.is_readonly = True
-
-    def label_tag(self):
-        attrs = {}
-        if not self.is_first:
-            attrs["class"] = "inline"
-        label = self.field['label']
-        contents = capfirst(force_unicode(escape(label))) + u":"
-        return mark_safe('<label%(attrs)s>%(contents)s</label>' % {
-            "attrs": flatatt(attrs),
-            "contents": contents,
-        })
 
     def contents(self):
         from django.contrib.admin.templatetags.admin_list import _boolean_icon
         from django.contrib.admin.views.main import EMPTY_CHANGELIST_VALUE
-        field, obj, model_admin = self.field['field'], self.form.instance, self.model_admin
+        name, obj, model_admin = self.field.name, self.form.instance, self.model_admin
         try:
-            f, attr, value = lookup_field(field, obj, model_admin)
+            f, attr, value = lookup_field(name, obj, model_admin)
         except (AttributeError, ValueError, ObjectDoesNotExist):
             result_repr = EMPTY_CHANGELIST_VALUE
         else:
@@ -284,22 +252,22 @@ class InlineAdminForm(AdminForm):
         return num_of_fields
 
     def pk_field(self):
-        return AdminField(self.form, self.formset._pk_field.name, False)
+        return AdminField(self.form, self.formset._pk_field.name)
 
     def fk_field(self):
         fk = getattr(self.formset, "fk", None)
         if fk:
-            return AdminField(self.form, fk.name, False)
+            return AdminField(self.form, fk.name)
         else:
             return ""
 
     def deletion_field(self):
         from django.forms.formsets import DELETION_FIELD_NAME
-        return AdminField(self.form, DELETION_FIELD_NAME, False)
+        return AdminField(self.form, DELETION_FIELD_NAME)
 
     def ordering_field(self):
         from django.forms.formsets import ORDERING_FIELD_NAME
-        return AdminField(self.form, ORDERING_FIELD_NAME, False)
+        return AdminField(self.form, ORDERING_FIELD_NAME)
 
 class InlineFieldset(Fieldset):
     def __init__(self, formset, *args, **kwargs):

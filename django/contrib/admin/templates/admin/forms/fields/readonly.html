@@ -1,0 +1,2 @@
+{% if field.id %}<label{% if not forloop.first %} class="inline"{% endif %}>{% endif %}{{ label }}{% if label|last not in ":?.!" %}:{% endif %}{% if field.id %}</label>{% endif %}
+<p>{{ adminfield.contents }}</p>

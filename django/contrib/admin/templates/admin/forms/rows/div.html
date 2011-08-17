@@ -1,0 +1,24 @@
+{% load admin_forms %}
+<div class="form-row{% if fields|length == 1 and line.errors %} errors{% endif %}{% for field in fields %} {{ field.field.name }}{% endfor %}">
+    {% if fields|length == 1 %}{% include "forms/errors.html" with errors=line.errors %}{% endif %}
+    {% for field in fields %}
+    {% with field as adminfield and field.field as field %}
+    {% with field.label as label and field.field.required as required %}
+    <div{% if fields|length > 1 %} class="field-box{% if not field.is_readonly and field.errors %} errors{% endif %}"{% endif %}>
+            {% if fields|length > 1 and not field.is_readonly %}{% include "forms/errors.html" with errors=field.errors %}{% endif %}
+            {% if field|is_checkbox %}
+                {% formrow field using "admin/forms/fields/checkbox.html" %}
+            {% else %}{% if field.is_readonly %}
+                {% formrow field using "admin/forms/fields/readonly.html" with adminfield=adminfield %}
+            {% else %}
+                {% if field.id %}<label{% if required or not forloop.first %} class="{% if required %}required{% endif %}{% if required and not forloop.first %} {% endif %}{% if not forloop.first %}inline{% endif %}"{% endif %} for="{{ field.id }}">{% endif %}{{ label }}{% if label|last not in ":?.!" %}:{% endif %}{% if field.id %}</label>{% endif %}
+                {% formfield field %}
+            {% endif %}{% endif %}
+            {% if field.help_text %}
+                <p class="help">{{ field.help_text|safe }}</p>
+            {% endif %}
+        </div>
+    {% endwith %}
+    {% endwith %}
+    {% endfor %}
+</div>
