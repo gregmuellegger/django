@@ -2982,7 +2982,8 @@ class UserAdminTest(TestCase):
     def test_user_permission_performance(self):
         u = User.objects.all()[0]
 
-        with self.assertNumQueries(7):
+        ContentType.objects.clear_cache()
+        with self.assertNumQueries(8):
             response = self.client.get('/test_admin/admin/auth/user/%s/' % u.pk)
             self.assertEqual(response.status_code, 200)
 
