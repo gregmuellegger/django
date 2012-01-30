@@ -20,7 +20,7 @@ Python compatibility
 
 Django 1.4 has dropped support for Python 2.4. Python 2.5 is now the minimum
 required Python version. Django is tested and supported on Python 2.5, 2.6 and
-            2.7.
+2.7.
 
 This change should affect only a small number of Django users, as most
 operating-system vendors today are shipping Python 2.5 or newer as their default
