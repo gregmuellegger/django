@@ -3,6 +3,7 @@ Comparing two html documents.
 '''
 import re
 from HTMLParser import HTMLParseError
+from django.utils.encoding import force_unicode
 from django.utils.htmlparser import HTMLParser
 
 
@@ -21,6 +22,7 @@ class Element(object):
 
     def append(self, element):
         if isinstance(element, basestring):
+            element = force_unicode(element)
             element = normalize_whitespace(element)
             if self.children:
                 if isinstance(self.children[-1], basestring):
@@ -55,7 +57,9 @@ class Element(object):
                 child.finalize()
 
     def __eq__(self, element):
-        if self.name != element.name:
+        if not hasattr(element, 'name'):
+            return False
+        if hasattr(element, 'name') and self.name != element.name:
             return False
         if len(self.attributes) != len(element.attributes):
             return False
@@ -122,9 +126,6 @@ class Element(object):
         else:
             output += u' />'
         return output
-
-    def __str__(self):
-        return str(unicode(self))
 
     def __repr__(self):
         return unicode(self)

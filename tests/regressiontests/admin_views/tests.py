@@ -2852,12 +2852,12 @@ class ReadonlyTest(TestCase):
             formats.localize(datetime.date.today() - datetime.timedelta(days=7))
         )
 
-        self.assertContains(response, '<div class="form-row field-coolness">', html=True)
-        self.assertContains(response, '<div class="form-row field-awesomeness_level">', html=True)
-        self.assertContains(response, '<div class="form-row field-posted">', html=True)
-        self.assertContains(response, '<div class="form-row field-value">', html=True)
-        self.assertContains(response, '<div class="form-row">', html=True)
-        self.assertContains(response, '<p class="help">', 3, html=True)
+        self.assertContains(response, '<div class="form-row field-coolness">')
+        self.assertContains(response, '<div class="form-row field-awesomeness_level">')
+        self.assertContains(response, '<div class="form-row field-posted">')
+        self.assertContains(response, '<div class="form-row field-value">')
+        self.assertContains(response, '<div class="form-row">')
+        self.assertContains(response, '<p class="help">', 3)
         self.assertContains(response, '<p class="help">Some help text for the title (with unicode ŠĐĆŽćžšđ)</p>', html=True)
         self.assertContains(response, '<p class="help">Some help text for the content (with unicode ŠĐĆŽćžšđ)</p>', html=True)
         self.assertContains(response, '<p class="help">Some help text for the date (with unicode ŠĐĆŽćžšđ)</p>', html=True)
@@ -3074,8 +3074,8 @@ class CSSTest(TestCase):
         self.assertContains(response, 'class="form-row"') # The lambda function
 
         # The tabular inline
-        self.assertContains(response, '<td class="field-url">', html=True)
-        self.assertContains(response, '<td class="field-posted">', html=True)
+        self.assertContains(response, '<td class="field-url">')
+        self.assertContains(response, '<td class="field-posted">')
 
 
 try:
