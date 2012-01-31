@@ -91,6 +91,92 @@ class AssertNumQueriesContextManagerTests(TestCase):
             self.client.get("/test_utils/get_person/%s/" % person.pk)
 
 
+class AssertTemplateUsedContextManagerTests(TestCase):
+    def test_usage(self):
+        with self.assertTemplateUsed('template_used/base.html'):
+            render_to_string('template_used/base.html')
+
+        with self.assertTemplateUsed(template_name='template_used/base.html'):
+            render_to_string('template_used/base.html')
+
+        with self.assertTemplateUsed('template_used/base.html'):
+            render_to_string('template_used/include.html')
+
+        with self.assertTemplateUsed('template_used/base.html'):
+            render_to_string('template_used/extends.html')
+
+        with self.assertTemplateUsed('template_used/base.html'):
+            render_to_string('template_used/base.html')
+            render_to_string('template_used/base.html')
+
+    def test_nested_usage(self):
+        with self.assertTemplateUsed('template_used/base.html'):
+            with self.assertTemplateUsed('template_used/include.html'):
+                render_to_string('template_used/include.html')
+
+        with self.assertTemplateUsed('template_used/extends.html'):
+            with self.assertTemplateUsed('template_used/base.html'):
+                render_to_string('template_used/extends.html')
+
+        with self.assertTemplateUsed('template_used/base.html'):
+            with self.assertTemplateUsed('template_used/alternative.html'):
+                render_to_string('template_used/alternative.html')
+            render_to_string('template_used/base.html')
+
+        with self.assertTemplateUsed('template_used/base.html'):
+            render_to_string('template_used/extends.html')
+            with self.assertTemplateNotUsed('template_used/base.html'):
+                render_to_string('template_used/alternative.html')
+            render_to_string('template_used/base.html')
+
+    def test_not_used(self):
+        with self.assertTemplateNotUsed('template_used/base.html'):
+            pass
+        with self.assertTemplateNotUsed('template_used/alternative.html'):
+            pass
+
+    def test_error_message(self):
+        try:
+            with self.assertTemplateUsed('template_used/base.html'):
+                pass
+        except AssertionError, e:
+            self.assertTrue('template_used/base.html' in e.message)
+
+        try:
+            with self.assertTemplateUsed(template_name='template_used/base.html'):
+                pass
+        except AssertionError, e:
+            self.assertTrue('template_used/base.html' in e.message)
+
+        try:
+            with self.assertTemplateUsed('template_used/base.html'):
+                render_to_string('template_used/alternative.html')
+        except AssertionError, e:
+            self.assertTrue('template_used/base.html' in e.message, e.message)
+            self.assertTrue('template_used/alternative.html' in e.message, e.message)
+
+    def test_failure(self):
+        with self.assertRaises(TypeError):
+            with self.assertTemplateUsed():
+                pass
+
+        with self.assertRaises(AssertionError):
+            with self.assertTemplateUsed(''):
+                pass
+
+        with self.assertRaises(AssertionError):
+            with self.assertTemplateUsed(''):
+                render_to_string('template_used/base.html')
+
+        with self.assertRaises(AssertionError):
+            with self.assertTemplateUsed(template_name=''):
+                pass
+
+        with self.assertRaises(AssertionError):
+            with self.assertTemplateUsed('template_used/base.html'):
+                render_to_string('template_used/alternative.html')
+
+
 class SaveRestoreWarningState(TestCase):
     def test_save_restore_warnings_state(self):
         """
