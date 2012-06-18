@@ -715,9 +715,11 @@ class SaveAsTests(TestCase):
         """
         response = self.client.get('/test_admin/admin/admin_views/person/1/')
         self.assertTrue(response.context['save_as'])
+        self.assertTrue('_saveasnew' in response.content)
         post_data = {'_saveasnew':'', 'name':'John M', 'gender':3, 'alive':'checked'}
         response = self.client.post('/test_admin/admin/admin_views/person/1/', post_data)
         self.assertEqual(response.context['form_url'], '/test_admin/admin/admin_views/person/add/')
+        self.assertTrue('_saveasnew' in response.content)
 
 class CustomModelAdminTest(AdminViewBasicTest):
     urls = "regressiontests.admin_views.urls"
